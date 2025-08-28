@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run2Win - Running Log</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>🏃‍♂️ Run2Win - Version A</h1>
+        <p>Track your running progress & earn achievement badges</p>
+    </header>
+
+    <main>
+        <!-- Add New Run Form -->
+        <section class="form-section">
+            <h2>Log New Run</h2>
+            <form class="run-form" onsubmit="return handleFormSubmit()">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="distance">Distance (miles)</label>
+                        <input type="number" id="distance" name="distance" step="0.1" min="0" placeholder="5.0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time">Time (minutes)</label>
+                        <input type="number" id="time" name="time" min="0" placeholder="30" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="elevation">Elevation Gain (feet)</label>
+                        <input type="number" id="elevation" name="elevation" min="0" placeholder="150">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pace">Pace (min/mile)</label>
+                        <input type="text" id="pace" name="pace" placeholder="8:30" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="How did the run feel? Weather conditions, route notes, etc."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">Log Run</button>
+            </form>
+        </section>
+
+        <!-- Achievement Badges -->
+        <section class="badges-section">
+            <h2>Achievement Badges</h2>
+            <div class="badges-grid">
+                <div class="badge locked" id="badge-first5k">
+                    <div class="badge-icon">🎯</div>
+                    <div class="badge-name">First 5K</div>
+                    <div class="badge-desc">Run 3.1+ miles in a single session</div>
+                </div>
+                
+                <div class="badge locked" id="badge-100miles">
+                    <div class="badge-icon">🌟</div>
+                    <div class="badge-name">100 Miles</div>
+                    <div class="badge-desc">Log 100 total miles</div>
+                </div>
+                
+                <div class="badge locked" id="badge-500ft">
+                    <div class="badge-icon">⛰️</div>
+                    <div class="badge-name">500ft Elevation</div>
+                    <div class="badge-desc">Gain 500+ feet elevation in one run</div>
+                </div>
+                
+                <div class="badge locked" id="badge-10000ft">
+                    <div class="badge-icon">🏔️</div>
+                    <div class="badge-name">10,000ft Elevation</div>
+                    <div class="badge-desc">Gain 10,000+ feet total elevation</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Cards -->
+        <section class="summary-section">
+            <div class="summary-card">
+                <h3>Total Stats</h3>
+                <div class="stat">
+                    <span class="stat-value" id="total-miles">0</span>
+                    <span class="stat-unit">total miles</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="total-elevation">0</span>
+                    <span class="stat-unit">total ft elevation</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Recent Activity</h3>
+                <div class="stat">
+                    <span class="stat-value" id="run-count">0</span>
+                    <span class="stat-unit">runs logged</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="badges-earned">0</span>
+                    <span class="stat-unit">badges earned</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badge Notification -->
+        <div id="badge-notification" class="badge-notification" style="display: none;">
+            <span id="badge-message"></span>
+        </div>
+
+        <!-- Recent Runs -->
+        <section class="runs-section">
+            <h2>Recent Runs</h2>
+            <div class="runs-list" id="runs-list">
+                <p class="no-runs" id="no-runs-message">No runs logged yet. Start by logging your first run above!</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Run2Win - Keep running, keep winning!</p>
+    </footer>
+
+    <script>
+        // Simple variables for data storage
+        var totalMiles = 0;
+        var totalElevation = 0;
+        var runCount = 0;
+        
+        // Badge status variables
+        var hasFirst5KBadge = false;
+        var has100MilesBadge = false;
+        var has500ftBadge = false;
+        var has10000ftBadge = false;
+        
+        // Variables to store 3 most recent runs
+        var run1Date = '';
+        var run1Distance = 0;
+        var run1Time = 0;
+        var run1Elevation = 0;
+        var run1Notes = '';
+        
+        var run2Date = '';
+        var run2Distance = 0;
+        var run2Time = 0;
+        var run2Elevation = 0;
+        var run2Notes = '';
+        
+        var run3Date = '';
+        var run3Distance = 0;
+        var run3Time = 0;
+        var run3Elevation = 0;
+        var run3Notes = '';
+
+        // Load data from localStorage
+        function loadData() {
+            var savedTotalMiles = localStorage.getItem('totalMiles');
+            var savedTotalElevation = localStorage.getItem('totalElevation');
+            var savedRunCount = localStorage.getItem('runCount');
+            var savedFirst5K = localStorage.getItem('hasFirst5KBadge');
+            var saved100Miles = localStorage.getItem('has100MilesBadge');
+            var saved500ft = localStorage.getItem('has500ftBadge');
+            var saved10000ft = localStorage.getItem('has10000ftBadge');
+            
+            // Load run data for 3 most recent runs
+            var savedRun1Date = localStorage.getItem('run1Date');
+            var savedRun1Distance = localStorage.getItem('run1Distance');
+            var savedRun1Time = localStorage.getItem('run1Time');
+            var savedRun1Elevation = localStorage.getItem('run1Elevation');
+            var savedRun1Notes = localStorage.getItem('run1Notes');
+            
+            var savedRun2Date = localStorage.getItem('run2Date');
+            var savedRun2Distance = localStorage.getItem('run2Distance');
+            var savedRun2Time = localStorage.getItem('run2Time');
+            var savedRun2Elevation = localStorage.getItem('run2Elevation');
+            var savedRun2Notes = localStorage.getItem('run2Notes');
+            
+            var savedRun3Date = localStorage.getItem('run3Date');
+            var savedRun3Distance = localStorage.getItem('run3Distance');
+            var savedRun3Time = localStorage.getItem('run3Time');
+            var savedRun3Elevation = localStorage.getItem('run3Elevation');
+            var savedRun3Notes = localStorage.getItem('run3Notes');
+            
+            if (savedTotalMiles) {
+                totalMiles = parseFloat(savedTotalMiles);
+            }
+            if (savedTotalElevation) {
+                totalElevation = parseFloat(savedTotalElevation);
+            }
+            if (savedRunCount) {
+                runCount = parseInt(savedRunCount);
+            }
+            if (savedFirst5K) {
+                hasFirst5KBadge = savedFirst5K === 'true';
+            }
+            if (saved100Miles) {
+                has100MilesBadge = saved100Miles === 'true';
+            }
+            if (saved500ft) {
+                has500ftBadge = saved500ft === 'true';
+            }
+            if (saved10000ft) {
+                has10000ftBadge = saved10000ft === 'true';
+            }
+            
+            if (savedRun1Date) {
+                run1Date = savedRun1Date;
+            }
+            if (savedRun1Distance) {
+                run1Distance = parseFloat(savedRun1Distance);
+            }
+            if (savedRun1Time) {
+                run1Time = parseInt(savedRun1Time);
+            }
+            if (savedRun1Elevation) {
+                run1Elevation = parseInt(savedRun1Elevation);
+            }
+            if (savedRun1Notes) {
+                run1Notes = savedRun1Notes;
+            }
+            
+            if (savedRun2Date) {
+                run2Date = savedRun2Date;
+            }
+            if (savedRun2Distance) {
+                run2Distance = parseFloat(savedRun2Distance);
+            }
+            if (savedRun2Time) {
+                run2Time = parseInt(savedRun2Time);
+            }
+            if (savedRun2Elevation) {
+                run2Elevation = parseInt(savedRun2Elevation);
+            }
+            if (savedRun2Notes) {
+                run2Notes = savedRun2Notes;
+            }
+            
+            if (savedRun3Date) {
+                run3Date = savedRun3Date;
+            }
+            if (savedRun3Distance) {
+                run3Distance = parseFloat(savedRun3Distance);
+            }
+            if (savedRun3Time) {
+                run3Time = parseInt(savedRun3Time);
+            }
+            if (savedRun3Elevation) {
+                run3Elevation = parseInt(savedRun3Elevation);
+            }
+            if (savedRun3Notes) {
+                run3Notes = savedRun3Notes;
+            }
+            
+            updateDisplay();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('totalMiles', totalMiles.toString());
+            localStorage.setItem('totalElevation', totalElevation.toString());
+            localStorage.setItem('runCount', runCount.toString());
+            localStorage.setItem('hasFirst5KBadge', hasFirst5KBadge.toString());
+            localStorage.setItem('has100MilesBadge', has100MilesBadge.toString());
+            localStorage.setItem('has500ftBadge', has500ftBadge.toString());
+            localStorage.setItem('has10000ftBadge', has10000ftBadge.toString());
+            
+            // Save run data for 3 most recent runs
+            localStorage.setItem('run1Date', run1Date);
+            localStorage.setItem('run1Distance', run1Distance.toString());
+            localStorage.setItem('run1Time', run1Time.toString());
+            localStorage.setItem('run1Elevation', run1Elevation.toString());
+            localStorage.setItem('run1Notes', run1Notes);
+            
+            localStorage.setItem('run2Date', run2Date);
+            localStorage.setItem('run2Distance', run2Distance.toString());
+            localStorage.setItem('run2Time', run2Time.toString());
+            localStorage.setItem('run2Elevation', run2Elevation.toString());
+            localStorage.setItem('run2Notes', run2Notes);
+            
+            localStorage.setItem('run3Date', run3Date);
+            localStorage.setItem('run3Distance', run3Distance.toString());
+            localStorage.setItem('run3Time', run3Time.toString());
+            localStorage.setItem('run3Elevation', run3Elevation.toString());
+            localStorage.setItem('run3Notes', run3Notes);
+        }
+
+        // Update display elements
+        function updateDisplay() {
+            document.getElementById('total-miles').textContent = totalMiles.toFixed(1);
+            document.getElementById('total-elevation').textContent = totalElevation.toFixed(0);
+            document.getElementById('run-count').textContent = runCount;
+            
+            // Count earned badges
+            var badgesEarned = 0;
+            if (hasFirst5KBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            if (has100MilesBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            if (has500ftBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            if (has10000ftBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            document.getElementById('badges-earned').textContent = badgesEarned;
+            
+            // Update badge display
+            updateBadgeDisplay();
+            updateRunsList();
+        }
+        
+        // Update runs list display
+        function updateRunsList() {
+            var runsList = document.getElementById('runs-list');
+            var noRunsMessage = document.getElementById('no-runs-message');
+            
+            if (runCount == 0) {
+                noRunsMessage.style.display = 'block';
+            } else {
+                noRunsMessage.style.display = 'none';
+                
+                var runsHTML = '';
+                
+                // Show run 1 (most recent) if it exists
+                if (run1Date != '') {
+                    var pace1 = 'N/A';
+                    if (run1Time > 0 && run1Distance > 0) {
+                        pace1 = (run1Time / run1Distance).toFixed(1) + ' min/mi';
+                    }
+                    
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run1Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run1Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run1Time + ' min</div>' +
+                            '<div class="run-pace">' + pace1 + '</div>' +
+                            '<div class="run-elevation">+' + run1Elevation + ' ft</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run1Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                // Show run 2 if it exists
+                if (run2Date != '') {
+                    var pace2 = 'N/A';
+                    if (run2Time > 0 && run2Distance > 0) {
+                        pace2 = (run2Time / run2Distance).toFixed(1) + ' min/mi';
+                    }
+                    
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run2Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run2Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run2Time + ' min</div>' +
+                            '<div class="run-pace">' + pace2 + '</div>' +
+                            '<div class="run-elevation">+' + run2Elevation + ' ft</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run2Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                // Show run 3 if it exists
+                if (run3Date != '') {
+                    var pace3 = 'N/A';
+                    if (run3Time > 0 && run3Distance > 0) {
+                        pace3 = (run3Time / run3Distance).toFixed(1) + ' min/mi';
+                    }
+                    
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run3Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run3Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run3Time + ' min</div>' +
+                            '<div class="run-pace">' + pace3 + '</div>' +
+                            '<div class="run-elevation">+' + run3Elevation + ' ft</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run3Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                runsList.innerHTML = runsHTML;
+            }
+        }
+
+        // Update badge visual states
+        function updateBadgeDisplay() {
+            var badge1 = document.getElementById('badge-first5k');
+            var badge2 = document.getElementById('badge-100miles');
+            var badge3 = document.getElementById('badge-500ft');
+            var badge4 = document.getElementById('badge-10000ft');
+            
+            if (hasFirst5KBadge) {
+                badge1.classList.remove('locked');
+                badge1.classList.add('earned');
+            } else {
+                badge1.classList.remove('earned');
+                badge1.classList.add('locked');
+            }
+            
+            if (has100MilesBadge) {
+                badge2.classList.remove('locked');
+                badge2.classList.add('earned');
+            } else {
+                badge2.classList.remove('earned');
+                badge2.classList.add('locked');
+            }
+            
+            if (has500ftBadge) {
+                badge3.classList.remove('locked');
+                badge3.classList.add('earned');
+            } else {
+                badge3.classList.remove('earned');
+                badge3.classList.add('locked');
+            }
+            
+            if (has10000ftBadge) {
+                badge4.classList.remove('locked');
+                badge4.classList.add('earned');
+            } else {
+                badge4.classList.remove('earned');
+                badge4.classList.add('locked');
+            }
+        }
+
+        // Badge checking logic following the flowchart
+        function checkBadges(distance, elevation) {
+            var newBadgeMessage = '';
+
+            // Check First 5K (3.1+ miles)
+            if (distance >= 3.1) {
+                if (hasFirst5KBadge == false) {
+                    hasFirst5KBadge = true;
+                    newBadgeMessage = newBadgeMessage + 'First 5K badge earned! ';
+                }
+            }
+
+            // Check 100 Miles total
+            if (totalMiles >= 100) {
+                if (has100MilesBadge == false) {
+                    has100MilesBadge = true;
+                    newBadgeMessage = newBadgeMessage + '100 Miles badge earned! ';
+                }
+            }
+
+            // Check 500ft elevation in single run
+            if (elevation >= 500) {
+                if (has500ftBadge == false) {
+                    has500ftBadge = true;
+                    newBadgeMessage = newBadgeMessage + '500ft Elevation badge earned! ';
+                }
+            }
+
+            // Check 10,000ft total elevation
+            if (totalElevation >= 10000) {
+                if (has10000ftBadge == false) {
+                    has10000ftBadge = true;
+                    newBadgeMessage = newBadgeMessage + '10,000ft Elevation badge earned! ';
+                }
+            }
+
+            return newBadgeMessage;
+        }
+
+        // Show badge notification on page
+        function showBadgeNotification(message) {
+            if (message != '') {
+                var notification = document.getElementById('badge-notification');
+                var messageElement = document.getElementById('badge-message');
+                
+                messageElement.textContent = '🎉 ' + message;
+                notification.style.display = 'block';
+                
+                // Hide after 3 seconds
+                setTimeout(function() {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Handle form submission
+        function handleFormSubmit() {
+            var distance = parseFloat(document.getElementById('distance').value);
+            var time = parseInt(document.getElementById('time').value);
+            var elevation = parseInt(document.getElementById('elevation').value);
+            
+            if (distance <= 0) {
+                alert('Please enter a valid distance.');
+                return false;
+            }
+            
+            if (isNaN(distance)) {
+                alert('Please enter a valid distance.');
+                return false;
+            }
+            
+            if (isNaN(time)) {
+                time = 0;
+            }
+            
+            if (isNaN(elevation)) {
+                elevation = 0;
+            }
+
+            // Store the current run data and shift older runs down
+            var notes = document.getElementById('notes').value;
+            var dateValue = document.getElementById('date').value;
+            
+            // Convert date to readable format
+            var newRunDate = '';
+            if (dateValue) {
+                var dateObj = new Date(dateValue);
+                newRunDate = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear();
+            } else {
+                var today = new Date();
+                newRunDate = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+            }
+            
+            // Shift runs down: run2 becomes run3, run1 becomes run2, new run becomes run1
+            run3Date = run2Date;
+            run3Distance = run2Distance;
+            run3Time = run2Time;
+            run3Elevation = run2Elevation;
+            run3Notes = run2Notes;
+            
+            run2Date = run1Date;
+            run2Distance = run1Distance;
+            run2Time = run1Time;
+            run2Elevation = run1Elevation;
+            run2Notes = run1Notes;
+            
+            run1Date = newRunDate;
+            run1Distance = distance;
+            run1Time = time;
+            run1Elevation = elevation;
+            run1Notes = notes;
+
+            // Update totals
+            totalMiles = totalMiles + distance;
+            totalElevation = totalElevation + elevation;
+            runCount = runCount + 1;
+
+            // Check for new badges
+            var badgeMessage = checkBadges(distance, elevation);
+
+            // Save and update display
+            saveData();
+            updateDisplay();
+            
+            // Show badge notifications
+            showBadgeNotification(badgeMessage);
+            
+            // Clear form
+            document.getElementById('distance').value = '';
+            document.getElementById('time').value = '';
+            document.getElementById('elevation').value = '';
+            document.getElementById('notes').value = '';
+            
+            return false;
+        }
+
+        // Initialize app when page loads
+        function initializeApp() {
+            loadData();
+            
+            // Set today's date as default
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = today.getMonth() + 1;
+            var day = today.getDate();
+            
+            if (month < 10) {
+                month = '0' + month;
+            }
+            if (day < 10) {
+                day = '0' + day;
+            }
+            
+            var todayString = year + '-' + month + '-' + day;
+            document.getElementById('date').value = todayString;
+        }
+
+        // Wait for page to load, then initialize
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>

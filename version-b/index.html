@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run2Win - Running Log</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>🏃‍♂️ Run2Win - Version B</h1>
+        <p>Track your running progress & build your streak</p>
+    </header>
+
+    <main>
+        <!-- Add New Run Form -->
+        <section class="form-section">
+            <h2>Log New Run</h2>
+            <form class="run-form" onsubmit="return handleFormSubmit()">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="distance">Distance (miles)</label>
+                        <input type="number" id="distance" name="distance" step="0.1" min="0" placeholder="5.0" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="time">Start Time</label>
+                        <input type="time" id="time" name="time" placeholder="07:30" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="duration">Duration (minutes)</label>
+                        <input type="number" id="duration" name="duration" min="0" placeholder="30" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="elevation">Elevation Gain (feet)</label>
+                        <input type="number" id="elevation" name="elevation" min="0" placeholder="150">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pace">Pace (min/mile)</label>
+                        <input type="text" id="pace" name="pace" placeholder="8:30" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="How did the run feel? Weather conditions, route notes, etc."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">Log Run</button>
+            </form>
+        </section>
+
+        <!-- Achievement Badges -->
+        <section class="badges-section">
+            <h2>Achievement Badges</h2>
+            <div class="badges-grid">
+                <div class="badge locked" id="badge-streak">
+                    <div class="badge-icon">🔥</div>
+                    <div class="badge-name">3-Day Streak</div>
+                    <div class="badge-desc">Run for 3 consecutive days</div>
+                </div>
+                
+                <div class="badge locked" id="badge-earlybird">
+                    <div class="badge-icon">🌅</div>
+                    <div class="badge-name">Early Bird</div>
+                    <div class="badge-desc">Complete a run before 8:00 AM</div>
+                </div>
+                
+                <div class="badge locked" id="badge-weekend">
+                    <div class="badge-icon">🏃‍♂️</div>
+                    <div class="badge-name">Weekend Warrior</div>
+                    <div class="badge-desc">Run on both Saturday and Sunday</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Badge Notification -->
+        <div id="badge-notification" class="badge-notification" style="display: none;">
+            <span id="badge-message"></span>
+        </div>
+
+        <!-- Summary Cards -->
+        <section class="summary-section">
+            <div class="summary-card">
+                <h3>Current Streak</h3>
+                <div class="stat">
+                    <span class="stat-value" id="current-streak">0</span>
+                    <span class="stat-unit">days</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="total-runs">0</span>
+                    <span class="stat-unit">total runs</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Recent Activity</h3>
+                <div class="stat">
+                    <span class="stat-value" id="weekend-runs">0</span>
+                    <span class="stat-unit">weekend runs</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="badges-earned">0</span>
+                    <span class="stat-unit">badges earned</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Runs -->
+        <section class="runs-section">
+            <h2>Recent Runs</h2>
+            <div class="runs-list" id="runs-list">
+                <p class="no-runs" id="no-runs-message">No runs logged yet. Start by logging your first run above!</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Run2Win - Keep running, keep winning!</p>
+    </footer>
+
+    <script>
+        // Simple variables for data storage
+        var totalRuns = 0;
+        var streakDays = 0;
+        var weekendRuns = 0;
+        var lastRunDate = '';
+        
+        // Badge status variables
+        var hasStreakBadge = false;
+        var hasEarlyBirdBadge = false;
+        var hasWeekendWarriorBadge = false;
+        
+        // Variables to store 3 most recent runs
+        var run1Date = '';
+        var run1Distance = 0;
+        var run1Time = '';
+        var run1Notes = '';
+        
+        var run2Date = '';
+        var run2Distance = 0;
+        var run2Time = '';
+        var run2Notes = '';
+        
+        var run3Date = '';
+        var run3Distance = 0;
+        var run3Time = '';
+        var run3Notes = '';
+
+        // Load data from localStorage
+        function loadData() {
+            var savedTotalRuns = localStorage.getItem('totalRuns');
+            var savedStreakDays = localStorage.getItem('streakDays');
+            var savedWeekendRuns = localStorage.getItem('weekendRuns');
+            var savedLastRunDate = localStorage.getItem('lastRunDate');
+            var savedStreakBadge = localStorage.getItem('hasStreakBadge');
+            var savedEarlyBirdBadge = localStorage.getItem('hasEarlyBirdBadge');
+            var savedWeekendWarriorBadge = localStorage.getItem('hasWeekendWarriorBadge');
+            
+            // Load run data for 3 most recent runs
+            var savedRun1Date = localStorage.getItem('run1Date');
+            var savedRun1Distance = localStorage.getItem('run1Distance');
+            var savedRun1Time = localStorage.getItem('run1Time');
+            var savedRun1Notes = localStorage.getItem('run1Notes');
+            
+            var savedRun2Date = localStorage.getItem('run2Date');
+            var savedRun2Distance = localStorage.getItem('run2Distance');
+            var savedRun2Time = localStorage.getItem('run2Time');
+            var savedRun2Notes = localStorage.getItem('run2Notes');
+            
+            var savedRun3Date = localStorage.getItem('run3Date');
+            var savedRun3Distance = localStorage.getItem('run3Distance');
+            var savedRun3Time = localStorage.getItem('run3Time');
+            var savedRun3Notes = localStorage.getItem('run3Notes');
+            
+            if (savedTotalRuns) {
+                totalRuns = parseInt(savedTotalRuns);
+            }
+            if (savedStreakDays) {
+                streakDays = parseInt(savedStreakDays);
+            }
+            if (savedWeekendRuns) {
+                weekendRuns = parseInt(savedWeekendRuns);
+            }
+            if (savedLastRunDate) {
+                lastRunDate = savedLastRunDate;
+            }
+            if (savedStreakBadge) {
+                hasStreakBadge = savedStreakBadge === 'true';
+            }
+            if (savedEarlyBirdBadge) {
+                hasEarlyBirdBadge = savedEarlyBirdBadge === 'true';
+            }
+            if (savedWeekendWarriorBadge) {
+                hasWeekendWarriorBadge = savedWeekendWarriorBadge === 'true';
+            }
+            
+            if (savedRun1Date) {
+                run1Date = savedRun1Date;
+            }
+            if (savedRun1Distance) {
+                run1Distance = parseFloat(savedRun1Distance);
+            }
+            if (savedRun1Time) {
+                run1Time = savedRun1Time;
+            }
+            if (savedRun1Notes) {
+                run1Notes = savedRun1Notes;
+            }
+            
+            if (savedRun2Date) {
+                run2Date = savedRun2Date;
+            }
+            if (savedRun2Distance) {
+                run2Distance = parseFloat(savedRun2Distance);
+            }
+            if (savedRun2Time) {
+                run2Time = savedRun2Time;
+            }
+            if (savedRun2Notes) {
+                run2Notes = savedRun2Notes;
+            }
+            
+            if (savedRun3Date) {
+                run3Date = savedRun3Date;
+            }
+            if (savedRun3Distance) {
+                run3Distance = parseFloat(savedRun3Distance);
+            }
+            if (savedRun3Time) {
+                run3Time = savedRun3Time;
+            }
+            if (savedRun3Notes) {
+                run3Notes = savedRun3Notes;
+            }
+            
+            updateDisplay();
+        }
+
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('totalRuns', totalRuns.toString());
+            localStorage.setItem('streakDays', streakDays.toString());
+            localStorage.setItem('weekendRuns', weekendRuns.toString());
+            localStorage.setItem('lastRunDate', lastRunDate);
+            localStorage.setItem('hasStreakBadge', hasStreakBadge.toString());
+            localStorage.setItem('hasEarlyBirdBadge', hasEarlyBirdBadge.toString());
+            localStorage.setItem('hasWeekendWarriorBadge', hasWeekendWarriorBadge.toString());
+            
+            // Save run data for 3 most recent runs
+            localStorage.setItem('run1Date', run1Date);
+            localStorage.setItem('run1Distance', run1Distance.toString());
+            localStorage.setItem('run1Time', run1Time);
+            localStorage.setItem('run1Notes', run1Notes);
+            
+            localStorage.setItem('run2Date', run2Date);
+            localStorage.setItem('run2Distance', run2Distance.toString());
+            localStorage.setItem('run2Time', run2Time);
+            localStorage.setItem('run2Notes', run2Notes);
+            
+            localStorage.setItem('run3Date', run3Date);
+            localStorage.setItem('run3Distance', run3Distance.toString());
+            localStorage.setItem('run3Time', run3Time);
+            localStorage.setItem('run3Notes', run3Notes);
+        }
+
+        // Update display elements
+        function updateDisplay() {
+            document.getElementById('current-streak').textContent = streakDays;
+            document.getElementById('total-runs').textContent = totalRuns;
+            document.getElementById('weekend-runs').textContent = weekendRuns;
+            
+            // Count earned badges
+            var badgesEarned = 0;
+            if (hasStreakBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            if (hasEarlyBirdBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            if (hasWeekendWarriorBadge) {
+                badgesEarned = badgesEarned + 1;
+            }
+            document.getElementById('badges-earned').textContent = badgesEarned;
+            
+            // Update badge display
+            updateBadgeDisplay();
+            updateRunsList();
+        }
+        
+        // Update runs list display
+        function updateRunsList() {
+            var runsList = document.getElementById('runs-list');
+            var noRunsMessage = document.getElementById('no-runs-message');
+            
+            if (totalRuns == 0) {
+                noRunsMessage.style.display = 'block';
+            } else {
+                noRunsMessage.style.display = 'none';
+                
+                var runsHTML = '';
+                
+                // Show run 1 (most recent) if it exists
+                if (run1Date != '') {
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run1Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run1Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run1Time + '</div>' +
+                            '<div class="run-pace">N/A</div>' +
+                            '<div class="run-elevation">N/A</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run1Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                // Show run 2 if it exists
+                if (run2Date != '') {
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run2Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run2Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run2Time + '</div>' +
+                            '<div class="run-pace">N/A</div>' +
+                            '<div class="run-elevation">N/A</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run2Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                // Show run 3 if it exists
+                if (run3Date != '') {
+                    runsHTML = runsHTML + '<div class="run-entry">' +
+                        '<div class="run-date">' + run3Date + '</div>' +
+                        '<div class="run-details">' +
+                            '<div class="run-distance">' + run3Distance.toFixed(1) + ' miles</div>' +
+                            '<div class="run-time">' + run3Time + '</div>' +
+                            '<div class="run-pace">N/A</div>' +
+                            '<div class="run-elevation">N/A</div>' +
+                        '</div>' +
+                        '<div class="run-notes">' + (run3Notes || 'No notes') + '</div>' +
+                    '</div>';
+                }
+                
+                runsList.innerHTML = runsHTML;
+            }
+        }
+
+        // Update badge visual states
+        function updateBadgeDisplay() {
+            var badge1 = document.getElementById('badge-streak');
+            var badge2 = document.getElementById('badge-earlybird');
+            var badge3 = document.getElementById('badge-weekend');
+            
+            if (hasStreakBadge) {
+                badge1.classList.remove('locked');
+                badge1.classList.add('earned');
+            } else {
+                badge1.classList.remove('earned');
+                badge1.classList.add('locked');
+            }
+            
+            if (hasEarlyBirdBadge) {
+                badge2.classList.remove('locked');
+                badge2.classList.add('earned');
+            } else {
+                badge2.classList.remove('earned');
+                badge2.classList.add('locked');
+            }
+            
+            if (hasWeekendWarriorBadge) {
+                badge3.classList.remove('locked');
+                badge3.classList.add('earned');
+            } else {
+                badge3.classList.remove('earned');
+                badge3.classList.add('locked');
+            }
+        }
+
+        // Check if date is yesterday
+        function isYesterday(dateString) {
+            var today = new Date();
+            var yesterday = new Date(today);
+            yesterday.setDate(today.getDate() - 1);
+            
+            var checkDate = new Date(dateString);
+            
+            return checkDate.getFullYear() === yesterday.getFullYear() &&
+                   checkDate.getMonth() === yesterday.getMonth() &&
+                   checkDate.getDate() === yesterday.getDate();
+        }
+
+        // Check if time is before 8am
+        function isEarlyBird(timeString) {
+            if (timeString == '') {
+                return false;
+            }
+            
+            var timeParts = timeString.split(':');
+            var hours = parseInt(timeParts[0]);
+            
+            return hours < 8;
+        }
+
+        // Check if date is weekend (Saturday or Sunday)
+        function isWeekend(dateString) {
+            var date = new Date(dateString);
+            var dayOfWeek = date.getDay();
+            
+            return dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
+        }
+
+        // Badge checking logic following the flowchart
+        function checkBadges(dateString, timeString) {
+            var newBadgeMessage = '';
+
+            // Update streak days
+            if (lastRunDate == '' || isYesterday(lastRunDate)) {
+                streakDays = streakDays + 1;
+            } else {
+                streakDays = 1;
+            }
+
+            // Check 3-Day Streak
+            if (streakDays >= 3) {
+                if (hasStreakBadge == false) {
+                    hasStreakBadge = true;
+                    newBadgeMessage = newBadgeMessage + '3-Day Streak badge earned! ';
+                }
+            }
+
+            // Check Early Bird (before 8am)
+            if (isEarlyBird(timeString)) {
+                if (hasEarlyBirdBadge == false) {
+                    hasEarlyBirdBadge = true;
+                    newBadgeMessage = newBadgeMessage + 'Early Bird badge earned! ';
+                }
+            }
+
+            // Check Weekend Warrior
+            if (isWeekend(dateString)) {
+                weekendRuns = weekendRuns + 1;
+            }
+            
+            if (weekendRuns >= 2) {
+                if (hasWeekendWarriorBadge == false) {
+                    hasWeekendWarriorBadge = true;
+                    newBadgeMessage = newBadgeMessage + 'Weekend Warrior badge earned! ';
+                }
+            }
+
+            return newBadgeMessage;
+        }
+
+        // Show badge notification on page
+        function showBadgeNotification(message) {
+            if (message != '') {
+                var notification = document.getElementById('badge-notification');
+                var messageElement = document.getElementById('badge-message');
+                
+                messageElement.textContent = '🎉 ' + message;
+                notification.style.display = 'block';
+                
+                // Hide after 3 seconds
+                setTimeout(function() {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Handle form submission
+        function handleFormSubmit() {
+            var distance = parseFloat(document.getElementById('distance').value);
+            var time = document.getElementById('time').value;
+            var duration = document.getElementById('duration').value;
+            var dateValue = document.getElementById('date').value;
+            
+            if (distance <= 0) {
+                alert('Please enter a valid distance.');
+                return false;
+            }
+            
+            if (isNaN(distance)) {
+                alert('Please enter a valid distance.');
+                return false;
+            }
+
+            // Store the current run data and shift older runs down
+            var notes = document.getElementById('notes').value;
+            
+            // Convert date to readable format
+            var newRunDate = '';
+            if (dateValue) {
+                var dateObj = new Date(dateValue);
+                newRunDate = (dateObj.getMonth() + 1) + '/' + dateObj.getDate() + '/' + dateObj.getFullYear();
+            } else {
+                var today = new Date();
+                newRunDate = (today.getMonth() + 1) + '/' + today.getDate() + '/' + today.getFullYear();
+                dateValue = today.toISOString().split('T')[0];
+            }
+            
+            // Shift runs down: run2 becomes run3, run1 becomes run2, new run becomes run1
+            run3Date = run2Date;
+            run3Distance = run2Distance;
+            run3Time = run2Time;
+            run3Notes = run2Notes;
+            
+            run2Date = run1Date;
+            run2Distance = run1Distance;
+            run2Time = run1Time;
+            run2Notes = run1Notes;
+            
+            run1Date = newRunDate;
+            run1Distance = distance;
+            run1Time = duration + ' min';
+            run1Notes = notes;
+
+            // Update totals
+            totalRuns = totalRuns + 1;
+
+            // Check for new badges
+            var badgeMessage = checkBadges(dateValue, time);
+            
+            // Update last run date for streak tracking
+            lastRunDate = dateValue;
+
+            // Save and update display
+            saveData();
+            updateDisplay();
+            
+            // Show badge notifications
+            showBadgeNotification(badgeMessage);
+            
+            // Clear form
+            document.getElementById('distance').value = '';
+            document.getElementById('time').value = '';
+            document.getElementById('duration').value = '';
+            document.getElementById('notes').value = '';
+            
+            return false;
+        }
+
+        // Initialize app when page loads
+        function initializeApp() {
+            loadData();
+            
+            // Set today's date as default
+            var today = new Date();
+            var year = today.getFullYear();
+            var month = today.getMonth() + 1;
+            var day = today.getDate();
+            
+            if (month < 10) {
+                month = '0' + month;
+            }
+            if (day < 10) {
+                day = '0' + day;
+            }
+            
+            var todayString = year + '-' + month + '-' + day;
+            document.getElementById('date').value = todayString;
+        }
+
+        // Wait for page to load, then initialize
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>

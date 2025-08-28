@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Run2Win - Running Log</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>🏃‍♂️ Run2Win</h1>
+        <p>Track your running progress</p>
+    </header>
+
+    <main>
+        <!-- Add New Run Form -->
+        <section class="form-section">
+            <h2>Log New Run</h2>
+            <form class="run-form" action="#" method="post">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="distance">Distance (miles)</label>
+                        <input type="number" id="distance" name="distance" step="0.1" min="0" placeholder="5.0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time">Time (minutes)</label>
+                        <input type="number" id="time" name="time" min="0" placeholder="30" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="elevation">Elevation Gain (feet)</label>
+                        <input type="number" id="elevation" name="elevation" min="0" placeholder="150">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pace">Pace (min/mile)</label>
+                        <input type="text" id="pace" name="pace" placeholder="8:30" readonly>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes (optional)</label>
+                    <textarea id="notes" name="notes" rows="3" placeholder="How did the run feel? Weather conditions, route notes, etc."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn">Log Run</button>
+            </form>
+        </section>
+
+        <!-- Summary Cards -->
+        <section class="summary-section">
+            <div class="summary-card">
+                <h3>7-Day Totals</h3>
+                <div class="stat">
+                    <span class="stat-value">24.5</span>
+                    <span class="stat-unit">miles</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">1,250</span>
+                    <span class="stat-unit">ft elevation</span>
+                </div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>30-Day Totals</h3>
+                <div class="stat">
+                    <span class="stat-value">98.2</span>
+                    <span class="stat-unit">miles</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">4,850</span>
+                    <span class="stat-unit">ft elevation</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Runs -->
+        <section class="runs-section">
+            <h2>Recent Runs</h2>
+            <div class="runs-list">
+                <div class="run-entry">
+                    <div class="run-date">Aug 26, 2024</div>
+                    <div class="run-details">
+                        <div class="run-distance">5.2 miles</div>
+                        <div class="run-time">42:30</div>
+                        <div class="run-pace">8:10 /mi</div>
+                        <div class="run-elevation">+285 ft</div>
+                    </div>
+                    <div class="run-notes">Morning run through the park. Great weather!</div>
+                </div>
+                
+                <div class="run-entry">
+                    <div class="run-date">Aug 24, 2024</div>
+                    <div class="run-details">
+                        <div class="run-distance">3.1 miles</div>
+                        <div class="run-time">26:45</div>
+                        <div class="run-pace">8:38 /mi</div>
+                        <div class="run-elevation">+125 ft</div>
+                    </div>
+                    <div class="run-notes">Easy recovery run</div>
+                </div>
+                
+                <div class="run-entry">
+                    <div class="run-date">Aug 22, 2024</div>
+                    <div class="run-details">
+                        <div class="run-distance">8.0 miles</div>
+                        <div class="run-time">68:20</div>
+                        <div class="run-pace">8:32 /mi</div>
+                        <div class="run-elevation">+520 ft</div>
+                    </div>
+                    <div class="run-notes">Long run with hill intervals. Felt strong!</div>
+                </div>
+                
+                <div class="run-entry">
+                    <div class="run-date">Aug 20, 2024</div>
+                    <div class="run-details">
+                        <div class="run-distance">4.5 miles</div>
+                        <div class="run-time">35:15</div>
+                        <div class="run-pace">7:50 /mi</div>
+                        <div class="run-elevation">+180 ft</div>
+                    </div>
+                    <div class="run-notes">Tempo run - pushed the pace</div>
+                </div>
+                
+                <div class="run-entry">
+                    <div class="run-date">Aug 18, 2024</div>
+                    <div class="run-details">
+                        <div class="run-distance">3.8 miles</div>
+                        <div class="run-time">32:40</div>
+                        <div class="run-pace">8:36 /mi</div>
+                        <div class="run-elevation">+140 ft</div>
+                    </div>
+                    <div class="run-notes">Easy evening run</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 Run2Win - Keep running, keep winning!</p>
+    </footer>
+</body>
+</html>
